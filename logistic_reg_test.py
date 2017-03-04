@@ -11,7 +11,7 @@ from sklearn.cross_validation import cross_val_score
 
 #######################################################
 # load dataset
-url = './DataExport/manually_clean_dataset.csv'
+url = './DataExport/clean_dataset_1.csv'
 table = pd.read_csv(url)
 
 #######################################################
@@ -80,7 +80,6 @@ model2.fit(X_train, y_train)
 print 'Prediction on the Test Set'
 predicted = model2.predict(X_test)
 print predicted
-
 
 # generate probabilities
 print 'Probability on the Test Set'
