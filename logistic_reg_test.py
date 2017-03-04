@@ -33,28 +33,19 @@ print table_gender
 #######################################################
 print '******************PREPARE DATA*************************'
 # Prepare data for Logistic Regression
-y, X = dmatrices('BookingPurchase ~ gender + p_sessionActivity + p_AddToCart + \
+y, X = dmatrices('BookingPurchase ~ C(gender) + p_sessionActivity + p_AddToCart + \
                   +p_sessionDuration + p_pageViews + daysFromPreviousVisit + \
                   +C(isExclusiveMember) + C(loggedIn) + C(p_MapInteraction) + \
                   C(p_trafficChannel) + C(osType)', table, return_type='dataframe')
+
 print X.columns
+
 """
 Bug note: No columns for u'C(isExclusiveMember)[T.0]', u'C(loggedIn)[T.0]',
        u'C(p_MapInteraction)[T.0]' We might have to change variable types for
        those columns for things to work properly. But for now, I'll leave the bug
        there when I'm testing
 """
-# clean up the category names in X for readability
-#X = X.rename(columns = {'C(occupation)[T.2.0]':'occ_2',
-#                        'C(occupation)[T.3.0]':'occ_3',
-#                        'C(occupation)[T.4.0]':'occ_4',
-#                        'C(occupation)[T.5.0]':'occ_5',
-#                        'C(occupation)[T.6.0]':'occ_6',
-#                        'C(occupation_husb)[T.2.0]':'occ_husb_2',
-#                        'C(occupation_husb)[T.3.0]':'occ_husb_3',
-#                        'C(occupation_husb)[T.4.0]':'occ_husb_4',
-#                        'C(occupation_husb)[T.5.0]':'occ_husb_5',
-#                        'C(occupation_husb)[T.6.0]':'occ_husb_6'})
 
 # flatten y into a 1-D array for regression
 y = np.ravel(y)
@@ -70,3 +61,7 @@ print 'Model Accuracy: '
 print test_score
 print 'No Purchase Percentage:'
 print 1-y.mean()
+
+print '********************COEFFICIENTS*************************'
+# examine the coefficients
+print pd.DataFrame(zip(X.columns, np.transpose(model.coef_)))
