@@ -66,4 +66,7 @@ model = LogisticRegression()
 model = model.fit(X, y)
 # print the test score for my model
 test_score = model.score(X, y)
+print 'Model Accuracy: '
 print test_score
+print 'No Purchase Percentage:'
+print 1-y.mean()
