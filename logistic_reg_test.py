@@ -5,14 +5,24 @@ import matplotlib.pyplot as plt
 
 from patsy import dmatrices
 from sklearn.linear_model import LogisticRegression
+from sklearn import preprocessing
 from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
 
 #######################################################
 # load dataset
-url = './DataExport/clean_dataset_1.csv'
+url = './DataExport/clean_dataset_9.csv'
 table = pd.read_csv(url)
+# fill the NaN values
+table = table.fillna(0)
+
+table['loyalty1'] = table['loggedIn']*table['isExclusiveMember']
+table['loyalty2'] = table['loggedIn']*table['p_AddToCart']
+table['loyalty3'] = table['loggedIn']*table['p_MapInteraction']
+table['loyalty4'] = table['isExclusiveMember']*table['p_AddToCart']
+table['loyalty5'] = table['p_sessionActivity']*table['p_TotalPrice']
+
 
 #######################################################
 # data exploration
@@ -33,23 +43,14 @@ print table_gender
 #######################################################
 print '******************PREPARE DATA*************************'
 # Prepare data for Logistic Regression
-#y, X = dmatrices('BookingPurchase ~  p_sessionActivity + p_AddToCart + \
-#                  +p_sessionDuration + p_pageViews + daysFromPreviousVisit + \
-#                  +C(isExclusiveMember) + C(loggedIn) + C(p_MapInteraction) + \
-#                  C(p_trafficChannel) + C(osType) + C(gender)', table, return_type='dataframe')
-
-y, X = dmatrices('BookingPurchase ~ C(gender) + p_sessionActivity + p_AddToCart + \
+y, X = dmatrices('BookingPurchase ~  p_sessionActivity + C(p_AddToCart) + \
+                  +p_sessionDuration + \
                   +C(isExclusiveMember) + C(loggedIn) + \
-                  C(p_trafficChannel) + C(osType)', table, return_type='dataframe')
+                   C(p_trafficChannel) + C(osType) + C(gender) \
+                  + C(loyalty1) + C(loyalty2) + C(loyalty3) + C(loyalty4) + loyalty5', table, return_type='dataframe')
 
 print X.columns
 
-"""
-Bug note: No columns for u'C(isExclusiveMember)[T.0]', u'C(loggedIn)[T.0]',
-       u'C(p_MapInteraction)[T.0]' We might have to change variable types for
-       those columns for things to work properly. But for now, I'll leave the bug
-       there when I'm testing
-"""
 
 # flatten y into a 1-D array for regression
 y = np.ravel(y)
@@ -58,6 +59,7 @@ y = np.ravel(y)
 print '****************LOGISTIC REGRESSION*************************'
 # instantiate a regression model, and fit with X and y
 model = LogisticRegression()
+#model = LogisticRegression(solver = 'newton-cg',max_iter = 3000, tol=0.00001)
 model = model.fit(X, y)
 # print the test score for my model
 test_score = model.score(X, y)
@@ -73,7 +75,7 @@ print pd.DataFrame(zip(X.columns, np.transpose(model.coef_)))
 #########################################################
 print '*****************VALIDATION SET EVALUATION***********************'
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-model2 = LogisticRegression()
+model2 = LogisticRegression(solver = 'newton-cg',max_iter = 3000, tol=0.00001)
 model2.fit(X_train, y_train)
 
 # predict class labels for the test set
