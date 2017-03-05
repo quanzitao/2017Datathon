@@ -47,15 +47,29 @@ def build_estimator():
 	# Continuous base columns.
 	p_sessionActivity = tf.contrib.layers.real_valued_column("p_sessionActivity")
 	p_sessionDuration = tf.contrib.layers.real_valued_column("p_sessionDuration")
+
+	isExclusiveMember_x_loggedIn = tf.contrib.layers.crossed_column([isExclusiveMember, loggedIn], hash_bucket_size=int(1e4))
+	p_AddToCart_x_p_MapInteraction = tf.contrib.layers.crossed_column([p_AddToCart, p_MapInteraction], hash_bucket_size=int(1e4))
+	# p_AddToCart_x_p_MapInteraction_x_isExclusiveMember_x_loggedIn = tf.contrib.layers.crossed_column([isExclusiveMember,loggedIn,p_AddToCart,p_MapInteraction], hash_bucket_size=int(1e8))
+
 	p_pageViews = tf.contrib.layers.real_valued_column("p_pageViews")
-	daysToCheckin = tf.contrib.layers.real_valued_column("daysToCheckin")
+	# daysToCheckin = tf.contrib.layers.real_valued_column("daysToCheckin")
 	daysFromPreviousVisit = tf.contrib.layers.real_valued_column("daysFromPreviousVisit")
-	p_TotalPrice = tf.contrib.layers.real_valued_column("p_TotalPrice")
+	# p_TotalPrice = tf.contrib.layers.real_valued_column("p_TotalPrice")
+
+	p_sessionActivity_x_p_sessionDuration = tf.contrib.layers.real_valued_column("p_sessionActivity_x_p_sessionDuration")
 
 	model_dir = tempfile.mkdtemp()
-	m = tf.contrib.learn.LinearClassifier(feature_columns=[gender,p_AddToCart,osType,
-		isExclusiveMember,loggedIn,p_MapInteraction,p_sessionActivity,p_sessionDuration,
-		p_pageViews,daysToCheckin,daysFromPreviousVisit,p_TotalPrice],
+	m = tf.contrib.learn.LinearClassifier(feature_columns=[gender,osType,
+		# isExclusiveMember,loggedIn,
+		# p_MapInteraction,p_AddToCart,
+		isExclusiveMember_x_loggedIn,
+		# p_AddToCart_x_p_MapInteraction_x_isExclusiveMember_x_loggedIn,
+		# p_sessionActivity,p_sessionDuration,
+		p_sessionActivity_x_p_sessionDuration,
+		p_AddToCart_x_p_MapInteraction,
+		p_pageViews,#daysToCheckin,
+		daysFromPreviousVisit],#,p_TotalPrice],
 		model_dir=model_dir)
 	
 	return m
@@ -64,13 +78,16 @@ def build_estimator():
 # Process input files
 train_file = tempfile.NamedTemporaryFile()
 test_file = tempfile.NamedTemporaryFile()
-urllib.urlretrieve("clean_training_set.csv", train_file.name)
-urllib.urlretrieve("clean_test_set.csv", test_file.name)
+urllib.urlretrieve("70w_train.csv", train_file.name)
+urllib.urlretrieve("70w_test.csv", test_file.name)
 
 COLUMNS = ["gender","p_sessionActivity","p_AddToCart",
-			"p_sessionDuration","p_pageViews","daysToCheckin","osType",
-			"daysFromPreviousVisit","p_TotalPrice","isExclusiveMember","loggedIn",
-			"p_MapInteraction","BookingPurchase"]
+			"p_sessionDuration","p_pageViews",#"daysToCheckin",
+			"osType",
+			"daysFromPreviousVisit",#"p_TotalPrice",
+			"isExclusiveMember","loggedIn",
+			"p_MapInteraction","BookingPurchase",
+			"p_sessionActivity_x_p_sessionDuration"]
 df_train = pd.read_csv(train_file, names=COLUMNS, skipinitialspace=True, skiprows=1)
 df_test = pd.read_csv(test_file, names=COLUMNS, skipinitialspace=True, skiprows=1)
 
@@ -79,10 +96,13 @@ LABEL_COLUMN = "label"
 df_train[LABEL_COLUMN] = (df_train["BookingPurchase"].apply(lambda x: x>0)).astype(int)
 df_test[LABEL_COLUMN] = (df_test["BookingPurchase"].apply(lambda x: x>0)).astype(int)
 
+# df_train["p_sessionActivity_x_p_sessionDuration"] = (df_train["BookingPurchase"].apply(lambda x: x>0)).astype(int)
+# df_test["p_sessionActivity_x_p_sessionDuration"] = (df_test["BookingPurchase"].apply(lambda x: x>0)).astype(int)
+
 CATEGORICAL_COLUMNS = ["gender","p_AddToCart","osType","isExclusiveMember","loggedIn",
 						"p_MapInteraction"]
-CONTINUOUS_COLUMNS = ["p_sessionActivity","p_sessionDuration","p_pageViews","daysToCheckin",
-						"daysFromPreviousVisit","p_TotalPrice"]
+CONTINUOUS_COLUMNS = ["p_sessionActivity","p_sessionDuration","p_pageViews",#"daysToCheckin",
+						"daysFromPreviousVisit","p_sessionActivity_x_p_sessionDuration"]#,"p_TotalPrice"]
 
 # Build estimator
 m = build_estimator()
